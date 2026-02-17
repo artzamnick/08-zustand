@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { QueryClient, HydrationBoundary, dehydrate } from "@tanstack/react-query";
 
 import type { FetchTagNote, NoteTag } from "@/types/note";
@@ -12,25 +13,49 @@ type Props = {
 
 const PER_PAGE = 12;
 
-const ALLOWED = new Set<NoteTag>([
-  "Todo",
-  "Work",
-  "Personal",
-  "Meeting",
-  "Shopping",
-]);
+const ALLOWED = new Set<NoteTag>(["Todo", "Work", "Personal", "Meeting", "Shopping"]);
+
+function resolveTag(raw?: string): FetchTagNote {
+  if (!raw || raw === "all") return "all";
+  return ALLOWED.has(raw as NoteTag) ? (raw as NoteTag) : "all";
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const raw = slug?.[0];
+  const tag = resolveTag(raw);
+
+  const filterLabel = tag === "all" ? "All notes" : tag;
+
+  const title = `${filterLabel} | NoteHub`;
+  const description = `Notes list filtered by: ${filterLabel}.`;
+
+  const url = `/notes/filter/${tag}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url,
+      images: [
+        {
+          url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+          width: 1200,
+          height: 630,
+          alt: "NoteHub",
+        },
+      ],
+    },
+  };
+}
 
 export default async function FilteredNotesPage({ params }: Props) {
   const { slug } = await params;
   const raw = slug?.[0];
 
-  const tag: FetchTagNote = !raw
-    ? "all"
-    : raw === "all"
-    ? "all"
-    : ALLOWED.has(raw as NoteTag)
-    ? (raw as NoteTag)
-    : "all";
+  const tag = resolveTag(raw);
 
   const tagKey = tag;
   const page = 1;

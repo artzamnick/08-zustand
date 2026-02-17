@@ -40,3 +40,23 @@
 .create button:hover {
   background: #0b5ed7;
 }
+
+.createLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  border-radius: 10px;
+  text-decoration: none;
+  border: 1px solid #ced4da;
+  background-color: #0d6efd;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.createLink:hover {
+  background-color: #0b5ed7;
+}
