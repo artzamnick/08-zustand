@@ -53,7 +53,7 @@ export default function NotesClient({ tag }: Props) {
         search: normalizedSearch,
         tag: apiTag,
       }),
-    placeholderData: (prev: NotesResponse | undefined) => prev,
+    placeholderData: (prev) => prev,
   });
 
   if (isLoading) return null;
@@ -61,7 +61,7 @@ export default function NotesClient({ tag }: Props) {
   if (!data) return null;
 
   return (
-    <div key={tagKey}>
+    <div>
       <div className={css.toolbar}>
         <div className={css.search}>
           <SearchBox value={inputValue} onChange={setInputValue} />
@@ -69,7 +69,11 @@ export default function NotesClient({ tag }: Props) {
 
         <div className={css.pagination}>
           {data.totalPages > 1 && (
-            <Pagination page={page} totalPages={data.totalPages} setPage={setPage} />
+            <Pagination
+              page={page}
+              totalPages={data.totalPages}
+              setPage={setPage}
+            />
           )}
         </div>
 

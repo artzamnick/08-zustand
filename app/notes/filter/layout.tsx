@@ -1,16 +1,33 @@
 import type { ReactNode } from "react";
-import css from "./layout.module.css";
+import Header from "@/components/Header/Header";
+import Footer from "@/components/Footer/Footer";
+import TanStackProvider from "@/components/TanStackProvider/TanStackProvider";
 
-type Props = {
+export default function RootLayout({
+  children,
+  sidebar,
+  modal,
+}: {
   children: ReactNode;
   sidebar: ReactNode;
-};
-
-export default function Layout({ children, sidebar }: Props) {
+  modal: ReactNode;
+}) {
   return (
-    <div className={css.container}>
-      <aside className={css.sidebar}>{sidebar}</aside>
-      <div className={css.notesWrapper}>{children}</div>
-    </div>
+    <html lang="en">
+      <body>
+        <TanStackProvider>
+          <Header />
+
+          <main style={{ display: "flex", minHeight: "calc(100vh - 120px)" }}>
+            {sidebar}
+            <div style={{ flex: 1 }}>{children}</div>
+          </main>
+
+          {modal}
+
+          <Footer />
+        </TanStackProvider>
+      </body>
+    </html>
   );
 }

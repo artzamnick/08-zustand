@@ -8,6 +8,8 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
+const ogImage = "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg";
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
 
@@ -30,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         url,
         images: [
           {
-            url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+            url: ogImage,
             width: 1200,
             height: 630,
             alt: "NoteHub",
@@ -39,9 +41,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     };
   } catch {
+    const title = "Note not found | NoteHub";
+    const description = "The requested note does not exist.";
+    const url = `/notes/${id}`;
+
     return {
-      title: "Note not found | NoteHub",
-      description: "The requested note does not exist.",
+      title,
+      description,
+      openGraph: {
+        title,
+        description,
+        url,
+        images: [
+          {
+            url: ogImage,
+            width: 1200,
+            height: 630,
+            alt: "NoteHub",
+          },
+        ],
+      },
     };
   }
 }
@@ -62,4 +81,3 @@ export default async function NoteDetailsPage({ params }: Props) {
     </HydrationBoundary>
   );
 }
-

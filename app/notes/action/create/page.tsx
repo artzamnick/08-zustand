@@ -5,6 +5,7 @@ import css from "./page.module.css";
 export const metadata: Metadata = {
   title: "Create note | NoteHub",
   description: "Create a new note in NoteHub.",
+  alternates: { canonical: "/notes/action/create" },
   openGraph: {
     title: "Create note | NoteHub",
     description: "Create a new note in NoteHub.",

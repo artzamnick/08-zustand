@@ -1,5 +1,7 @@
+"use client";
+
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { NoteTag } from "@/types/note";
 
 export const initialDraft = {
@@ -20,14 +22,18 @@ export const useNoteStore = create<NoteStore>()(
   persist(
     (set) => ({
       draft: initialDraft,
+
       setDraft: (note) =>
         set((state) => ({
           draft: { ...state.draft, ...note },
         })),
+
       clearDraft: () => set({ draft: initialDraft }),
     }),
     {
       name: "notehub-draft",
+      version: 1,
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ draft: state.draft }),
     }
   )

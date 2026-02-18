@@ -1,23 +1,30 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 
 import css from "./NoteForm.module.css";
 import type { NoteTag } from "@/types/note";
 import { useNoteStore } from "@/lib/store/noteStore";
-import { createNoteAction, type CreateNoteActionState } from "@/app/notes/action/create/page";
+import {
+  createNoteAction,
+  type CreateNoteActionState,
+} from "@/app/notes/action/create/actions";
 
-const TAGS: NoteTag[] = ["Todo", "Work", "Personal", "Meeting", "Shopping"];
+const TAGS: readonly NoteTag[] = ["Todo", "Work", "Personal", "Meeting", "Shopping"] as const;
 
 const initialState: CreateNoteActionState = { ok: false };
 
-function SubmitButton() {
+function SubmitButton({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus();
 
   return (
-    <button type="submit" className={css.submitButton} disabled={pending}>
+    <button
+      type="submit"
+      className={css.submitButton}
+      disabled={disabled || pending}
+    >
       {pending ? "Creating..." : "Create note"}
     </button>
   );
@@ -28,7 +35,6 @@ export default function NoteForm() {
   const { draft, setDraft, clearDraft } = useNoteStore();
 
   const [state, formAction] = useFormState(createNoteAction, initialState);
-  const [clientError, setClientError] = useState<string | null>(null);
 
   useEffect(() => {
     if (state.ok) {
@@ -37,10 +43,6 @@ export default function NoteForm() {
     }
   }, [state.ok, clearDraft, router]);
 
-  const onCancel = () => {
-    router.back();
-  };
-
   const canSubmit = useMemo(() => {
     const title = draft.title.trim();
     if (title.length < 3 || title.length > 50) return false;
@@ -48,28 +50,17 @@ export default function NoteForm() {
     return true;
   }, [draft.title, draft.content]);
 
+  const handleTitle = (value: string) => setDraft({ title: value });
+  const handleContent = (value: string) => setDraft({ content: value });
+
+  const handleTag = (value: string) => {
+    if ((TAGS as readonly string[]).includes(value)) {
+      setDraft({ tag: value as NoteTag });
+    }
+  };
+
   return (
-    <form
-      className={css.form}
-      action={async (fd) => {
-        setClientError(null);
-
-        if (!canSubmit) {
-          setClientError("Please fix the form fields before submitting.");
-          return;
-        }
-
-        await formAction(fd);
-      }}
-      onChange={(e) => {
-        const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
-        const { name, value } = target;
-
-        if (name === "title" || name === "content" || name === "tag") {
-          setDraft({ [name]: value } as any);
-        }
-      }}
-    >
+    <form className={css.form} action={formAction}>
       <div className={css.formGroup}>
         <label htmlFor="title">Title</label>
         <input
@@ -78,7 +69,7 @@ export default function NoteForm() {
           className={css.input}
           type="text"
           value={draft.title}
-          onChange={(e) => setDraft({ title: e.target.value })}
+          onChange={(e) => handleTitle(e.target.value)}
           required
           minLength={3}
           maxLength={50}
@@ -93,7 +84,7 @@ export default function NoteForm() {
           className={css.textarea}
           rows={8}
           value={draft.content}
-          onChange={(e) => setDraft({ content: e.target.value })}
+          onChange={(e) => handleContent(e.target.value)}
           maxLength={500}
         />
       </div>
@@ -105,7 +96,7 @@ export default function NoteForm() {
           name="tag"
           className={css.select}
           value={draft.tag}
-          onChange={(e) => setDraft({ tag: e.target.value as NoteTag })}
+          onChange={(e) => handleTag(e.target.value)}
         >
           {TAGS.map((t) => (
             <option key={t} value={t}>
@@ -116,16 +107,18 @@ export default function NoteForm() {
       </div>
 
       <div className={css.actions}>
-        <button type="button" className={css.cancelButton} onClick={onCancel}>
+        <button
+          type="button"
+          className={css.cancelButton}
+          onClick={() => router.back()}
+        >
           Cancel
         </button>
 
-        <SubmitButton />
+        <SubmitButton disabled={!canSubmit} />
       </div>
 
-      {(clientError || (!state.ok && state.message)) && (
-        <p className={css.error}>{clientError ?? state.message}</p>
-      )}
+      {!state.ok && state.message && <p className={css.error}>{state.message}</p>}
     </form>
   );
 }

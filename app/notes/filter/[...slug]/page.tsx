@@ -77,7 +77,7 @@ export default async function FilteredNotesPage({ params }: Props) {
   return (
     <main className={css.container}>
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <NotesClient tag={tag} />
+        <NotesClient key={tag} tag={tag} />
       </HydrationBoundary>
     </main>
   );
