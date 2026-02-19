@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 import css from "./NoteForm.module.css";
 import type { NoteTag } from "@/types/note";
@@ -12,8 +13,7 @@ import {
   type CreateNoteActionState,
 } from "@/app/notes/action/create/actions";
 
-const TAGS: readonly NoteTag[] = ["Todo", "Work", "Personal", "Meeting", "Shopping"] as const;
-
+const TAGS: NoteTag[] = ["Todo", "Work", "Personal", "Meeting", "Shopping"];
 const initialState: CreateNoteActionState = { ok: false };
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
@@ -32,35 +32,60 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 
 export default function NoteForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { draft, setDraft, clearDraft } = useNoteStore();
 
   const [state, formAction] = useFormState(createNoteAction, initialState);
-
-  useEffect(() => {
-    if (state.ok) {
-      clearDraft();
-      router.back();
-    }
-  }, [state.ok, clearDraft, router]);
+  const [clientError, setClientError] = useState<string | null>(null);
 
   const canSubmit = useMemo(() => {
     const title = draft.title.trim();
     if (title.length < 3 || title.length > 50) return false;
     if (draft.content.trim().length > 500) return false;
+    if (!TAGS.includes(draft.tag)) return false;
     return true;
-  }, [draft.title, draft.content]);
+  }, [draft.title, draft.content, draft.tag]);
 
-  const handleTitle = (value: string) => setDraft({ title: value });
-  const handleContent = (value: string) => setDraft({ content: value });
+  useEffect(() => {
+    if (!state.ok) return;
 
-  const handleTag = (value: string) => {
-    if ((TAGS as readonly string[]).includes(value)) {
-      setDraft({ tag: value as NoteTag });
+    const onSuccess = async () => {
+      clearDraft();
+
+      await queryClient.invalidateQueries({ queryKey: ["notes"] });
+
+      router.push("/notes/filter/all");
+
+      router.refresh();
+    };
+
+    onSuccess();
+  }, [state.ok, clearDraft, queryClient, router]);
+
+  const handleFieldChange = (
+    name: "title" | "content" | "tag",
+    value: string
+  ) => {
+    if (name === "tag") {
+      if (TAGS.includes(value as NoteTag)) setDraft({ tag: value as NoteTag });
+      return;
     }
+    if (name === "title") setDraft({ title: value });
+    if (name === "content") setDraft({ content: value });
   };
 
   return (
-    <form className={css.form} action={formAction}>
+    <form
+      className={css.form}
+      action={async (fd) => {
+        setClientError(null);
+        if (!canSubmit) {
+          setClientError("Please fix the form fields before submitting.");
+          return;
+        }
+        await formAction(fd);
+      }}
+    >
       <div className={css.formGroup}>
         <label htmlFor="title">Title</label>
         <input
@@ -69,7 +94,7 @@ export default function NoteForm() {
           className={css.input}
           type="text"
           value={draft.title}
-          onChange={(e) => handleTitle(e.target.value)}
+          onChange={(e) => handleFieldChange("title", e.target.value)}
           required
           minLength={3}
           maxLength={50}
@@ -84,7 +109,7 @@ export default function NoteForm() {
           className={css.textarea}
           rows={8}
           value={draft.content}
-          onChange={(e) => handleContent(e.target.value)}
+          onChange={(e) => handleFieldChange("content", e.target.value)}
           maxLength={500}
         />
       </div>
@@ -96,7 +121,7 @@ export default function NoteForm() {
           name="tag"
           className={css.select}
           value={draft.tag}
-          onChange={(e) => handleTag(e.target.value)}
+          onChange={(e) => handleFieldChange("tag", e.target.value)}
         >
           {TAGS.map((t) => (
             <option key={t} value={t}>
@@ -118,7 +143,9 @@ export default function NoteForm() {
         <SubmitButton disabled={!canSubmit} />
       </div>
 
-      {!state.ok && state.message && <p className={css.error}>{state.message}</p>}
+      {(clientError || (!state.ok && state.message)) && (
+        <p className={css.error}>{clientError ?? state.message}</p>
+      )}
     </form>
   );
 }

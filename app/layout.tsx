@@ -43,7 +43,7 @@ export default function RootLayout({
   modal?: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={roboto.variable}>
       <body className={roboto.className}>
         <TanStackProvider>
           <div
@@ -51,10 +51,13 @@ export default function RootLayout({
               minHeight: "100vh",
               display: "flex",
               flexDirection: "column",
+              width: "100%",
             }}
           >
             <Header />
-            <main style={{ flex: 1, display: "flex" }}>{children}</main>
+
+            <main style={{ flex: 1, width: "100%" }}>{children}</main>
+
             {modal ?? null}
             <Footer />
           </div>

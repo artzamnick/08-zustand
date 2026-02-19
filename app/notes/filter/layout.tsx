@@ -1,31 +1,67 @@
-import type { ReactNode } from "react";
+import type { Metadata } from "next";
+import { Roboto } from "next/font/google";
+import "./globals.css";
+
 import Header from "@/components/Header/Header";
 import Footer from "@/components/Footer/Footer";
 import TanStackProvider from "@/components/TanStackProvider/TanStackProvider";
 
+const roboto = Roboto({
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "700"],
+  variable: "--font-roboto",
+  display: "swap",
+});
+
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || "http://localhost:3000";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
+  title: "NoteHub",
+  description: "Notes app built with Next.js",
+  openGraph: {
+    title: "NoteHub",
+    description: "Notes app built with Next.js",
+    url: siteUrl,
+    images: [
+      {
+        url: "https://ac.goit.global/fullstack/react/notehub-og-meta.jpg",
+        width: 1200,
+        height: 630,
+        alt: "NoteHub",
+      },
+    ],
+  },
+};
+
 export default function RootLayout({
   children,
-  sidebar,
   modal,
-}: {
-  children: ReactNode;
-  sidebar: ReactNode;
-  modal: ReactNode;
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+  modal?: React.ReactNode;
+}>) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className={roboto.variable}>
+      <body className={roboto.className}>
         <TanStackProvider>
-          <Header />
+          <div
+            style={{
+              minHeight: "100vh",
+              display: "flex",
+              flexDirection: "column",
+              width: "100%",
+            }}
+          >
+            <Header />
 
-          <main style={{ display: "flex", minHeight: "calc(100vh - 120px)" }}>
-            {sidebar}
-            <div style={{ flex: 1 }}>{children}</div>
-          </main>
+            <main style={{ flex: 1, width: "100%" }}>{children}</main>
 
-          {modal}
+            {modal ?? null}
 
-          <Footer />
+            <Footer />
+          </div>
         </TanStackProvider>
       </body>
     </html>

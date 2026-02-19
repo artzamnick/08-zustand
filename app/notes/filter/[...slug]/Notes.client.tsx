@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import SearchBox from "@/components/SearchBox/SearchBox";
 import NoteList from "@/components/NoteList/NoteList";
@@ -25,11 +25,12 @@ function normalizeTag(tag?: FetchTagNote): NoteTag | undefined {
 }
 
 export default function NotesClient({ tag }: Props) {
+  const queryClient = useQueryClient();
+
   const tagKey = tag ?? "all";
   const apiTag = normalizeTag(tag);
 
   const [page, setPage] = useState(1);
-
   const [inputValue, setInputValue] = useState("");
   const [search, setSearch] = useState("");
 
@@ -44,8 +45,10 @@ export default function NotesClient({ tag }: Props) {
 
   const normalizedSearch = search.trim();
 
-  const { data, isLoading, isError, error } = useQuery<NotesResponse>({
-    queryKey: ["notes", tagKey, page, PER_PAGE, normalizedSearch],
+  const queryKey = ["notes", tagKey, page, PER_PAGE, normalizedSearch] as const;
+
+  const { data, isLoading, isError, error, refetch } = useQuery<NotesResponse>({
+    queryKey,
     queryFn: () =>
       getNotes({
         page,
@@ -54,7 +57,29 @@ export default function NotesClient({ tag }: Props) {
         tag: apiTag,
       }),
     placeholderData: (prev) => prev,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
+
+  useEffect(() => {
+    const key = "notehub:notes:refresh";
+    const value = (() => {
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    })();
+
+    if (!value) return;
+
+    try {
+      localStorage.removeItem(key);
+    } catch {}
+
+    queryClient.invalidateQueries({ queryKey: ["notes"], exact: false });
+    refetch();
+  }, [queryClient, refetch]);
 
   if (isLoading) return null;
   if (isError) throw (error as Error);
@@ -69,11 +94,7 @@ export default function NotesClient({ tag }: Props) {
 
         <div className={css.pagination}>
           {data.totalPages > 1 && (
-            <Pagination
-              page={page}
-              totalPages={data.totalPages}
-              setPage={setPage}
-            />
+            <Pagination page={page} totalPages={data.totalPages} setPage={setPage} />
           )}
         </div>
 

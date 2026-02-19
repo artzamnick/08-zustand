@@ -7,13 +7,22 @@ import NotesClient from "./Notes.client";
 
 import css from "./page.module.css";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type Props = {
   params: Promise<{ slug?: string[] }>;
 };
 
 const PER_PAGE = 12;
 
-const ALLOWED = new Set<NoteTag>(["Todo", "Work", "Personal", "Meeting", "Shopping"]);
+const ALLOWED = new Set<NoteTag>([
+  "Todo",
+  "Work",
+  "Personal",
+  "Meeting",
+  "Shopping",
+]);
 
 function resolveTag(raw?: string): FetchTagNote {
   if (!raw || raw === "all") return "all";
@@ -75,10 +84,10 @@ export default async function FilteredNotesPage({ params }: Props) {
   });
 
   return (
-    <main className={css.container}>
+    <div className={css.container}>
       <HydrationBoundary state={dehydrate(queryClient)}>
         <NotesClient key={tag} tag={tag} />
       </HydrationBoundary>
-    </main>
+    </div>
   );
 }

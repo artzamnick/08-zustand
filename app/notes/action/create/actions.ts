@@ -1,14 +1,22 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createNote } from "@/lib/api";
-import type { NoteTag } from "@/types/note";
+import type { Note, NoteTag } from "@/types/note";
 
 export type CreateNoteActionState = {
   ok: boolean;
   message?: string;
+  note?: Note;
 };
 
-const TAGS: readonly NoteTag[] = ["Todo", "Work", "Personal", "Meeting", "Shopping"] as const;
+const TAGS: readonly NoteTag[] = [
+  "Todo",
+  "Work",
+  "Personal",
+  "Meeting",
+  "Shopping",
+] as const;
 
 function isValidTag(value: string): value is NoteTag {
   return (TAGS as readonly string[]).includes(value);
@@ -35,8 +43,17 @@ export async function createNoteAction(
   }
 
   try {
-    await createNote({ title, content, tag: rawTag });
-    return { ok: true };
+    const note = await createNote({ title, content, tag: rawTag });
+
+    revalidatePath("/notes");
+    revalidatePath("/notes/filter/all");
+    revalidatePath("/notes/filter/Todo");
+    revalidatePath("/notes/filter/Work");
+    revalidatePath("/notes/filter/Personal");
+    revalidatePath("/notes/filter/Meeting");
+    revalidatePath("/notes/filter/Shopping");
+
+    return { ok: true, note };
   } catch (e) {
     return {
       ok: false,
