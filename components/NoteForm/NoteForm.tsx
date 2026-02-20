@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState, useEffect, useMemo, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -35,7 +35,8 @@ export default function NoteForm() {
   const queryClient = useQueryClient();
   const { draft, setDraft, clearDraft } = useNoteStore();
 
-  const [state, formAction] = useFormState(createNoteAction, initialState);
+  const [state, formAction] = useActionState(createNoteAction, initialState);
+
   const [clientError, setClientError] = useState<string | null>(null);
 
   const canSubmit = useMemo(() => {
@@ -49,17 +50,19 @@ export default function NoteForm() {
   useEffect(() => {
     if (!state.ok) return;
 
-    const onSuccess = async () => {
+    (async () => {
       clearDraft();
 
-      await queryClient.invalidateQueries({ queryKey: ["notes"] });
+      await queryClient.invalidateQueries({ queryKey: ["notes"], exact: false });
+      await queryClient.refetchQueries({
+        queryKey: ["notes"],
+        exact: false,
+        type: "active",
+      });
 
-      router.push("/notes/filter/all");
-
+      router.replace("/notes/filter/all");
       router.refresh();
-    };
-
-    onSuccess();
+    })();
   }, [state.ok, clearDraft, queryClient, router]);
 
   const handleFieldChange = (
@@ -79,10 +82,12 @@ export default function NoteForm() {
       className={css.form}
       action={async (fd) => {
         setClientError(null);
+
         if (!canSubmit) {
           setClientError("Please fix the form fields before submitting.");
           return;
         }
+
         await formAction(fd);
       }}
     >

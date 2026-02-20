@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import SearchBox from "@/components/SearchBox/SearchBox";
@@ -45,9 +45,12 @@ export default function NotesClient({ tag }: Props) {
 
   const normalizedSearch = search.trim();
 
-  const queryKey = ["notes", tagKey, page, PER_PAGE, normalizedSearch] as const;
+  const queryKey = useMemo(
+    () => ["notes", tagKey, page, PER_PAGE, normalizedSearch] as const,
+    [tagKey, page, normalizedSearch]
+  );
 
-  const { data, isLoading, isError, error, refetch } = useQuery<NotesResponse>({
+  const { data, isLoading, isError, error } = useQuery<NotesResponse>({
     queryKey,
     queryFn: () =>
       getNotes({
@@ -57,19 +60,19 @@ export default function NotesClient({ tag }: Props) {
         tag: apiTag,
       }),
     placeholderData: (prev) => prev,
-    refetchOnMount: "always",
+    refetchOnMount: false,
     staleTime: 0,
   });
 
   useEffect(() => {
     const key = "notehub:notes:refresh";
-    const value = (() => {
-      try {
-        return localStorage.getItem(key);
-      } catch {
-        return null;
-      }
-    })();
+
+    let value: string | null = null;
+    try {
+      value = localStorage.getItem(key);
+    } catch {
+      value = null;
+    }
 
     if (!value) return;
 
@@ -78,11 +81,19 @@ export default function NotesClient({ tag }: Props) {
     } catch {}
 
     queryClient.invalidateQueries({ queryKey: ["notes"], exact: false });
-    refetch();
-  }, [queryClient, refetch]);
+  }, [queryClient]);
 
   if (isLoading) return null;
-  if (isError) throw (error as Error);
+
+  if (isError) {
+    return (
+      <p style={{ padding: 16 }}>
+        Could not fetch notes.{" "}
+        {error instanceof Error ? error.message : "Unknown error."}
+      </p>
+    );
+  }
+
   if (!data) return null;
 
   return (
@@ -94,7 +105,11 @@ export default function NotesClient({ tag }: Props) {
 
         <div className={css.pagination}>
           {data.totalPages > 1 && (
-            <Pagination page={page} totalPages={data.totalPages} setPage={setPage} />
+            <Pagination
+              page={page}
+              totalPages={data.totalPages}
+              setPage={setPage}
+            />
           )}
         </div>
 

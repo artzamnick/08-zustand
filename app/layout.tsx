@@ -56,9 +56,18 @@ export default function RootLayout({
           >
             <Header />
 
-            <main style={{ flex: 1, width: "100%" }}>{children}</main>
+            <main
+              style={{
+                flex: 1,
+                width: "100%",
+                display: "flex",
+              }}
+            >
+              {children}
+            </main>
 
             {modal ?? null}
+
             <Footer />
           </div>
         </TanStackProvider>
