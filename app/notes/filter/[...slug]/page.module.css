@@ -60,3 +60,13 @@
 .createLink:hover {
   background-color: #0b5ed7;
 }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  padding-bottom: 16px;  
+  border-bottom: 1px solid #e5e7eb;  
+}
